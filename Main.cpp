@@ -15,6 +15,10 @@ struct Square
     bool wallRight;
     bool wallLeft;
     bool wallBack;
+    bool frontChecked;
+    bool rightChecked;
+    bool backChecked;
+    bool leftChecked;
     char floodValue;
     bool marked;
 };
@@ -47,7 +51,12 @@ int main(int argc, char* argv[]) {
             mazeArray[i][j].wallFront = false;
             mazeArray[i][j].wallRight = false;
             mazeArray[i][j].wallBack = false;
-            mazeArray[i][j].wallLeft = false;            
+            mazeArray[i][j].wallLeft = false;
+            mazeArray[i][j].frontChecked = false;
+            mazeArray[i][j].rightChecked = false;
+            mazeArray[i][j].backChecked = false;
+            mazeArray[i][j].leftChecked = false;
+            mazeArray[i][j].marked = false;            
             if((i == 8 && j == 7) || (i == 7 && j == 8) || (i == 8 && j == 8) || (i == 7 && j == 7))
             {
                 mazeArray[i][j].floodValue = 0;
@@ -69,6 +78,15 @@ int main(int argc, char* argv[]) {
 
         actualizarParedes(mazeArray,mouse);
         floodFill(mazeArray);
+        for(int i = 0; i <= 15; i++)
+        {
+            for(int j = 0; j <= 15; j++)
+            {
+                std::cerr << std::to_string(mazeArray[i][j].floodValue) << "  ";
+            }
+            std::cerr << std::endl;        
+        }
+        std::cerr << std::endl;
         checkNeighborsAndMove(mazeArray, mouse);
         if(mazeArray[mouse.y][mouse.x].floodValue == 0)
         {
@@ -79,26 +97,34 @@ int main(int argc, char* argv[]) {
 
 void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
 {
-    int floodAux = 1000;
+    char floodAux = 100;
     Orientation moveDirection = UP;
-    if(mouse.y-1 >= 0 && mazeArray[mouse.y-1][mouse.x].floodValue < floodAux) // Chequea arriba
+    if(mouse.y-1 >= 0 && mazeArray[mouse.y-1][mouse.x].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallFront == false
+    && mazeArray[mouse.y][mouse.x].frontChecked == false) // Chequea arriba
     {
         floodAux = mazeArray[mouse.y-1][mouse.x].floodValue;
+        mazeArray[mouse.y][mouse.x].frontChecked == true;
     }
-    if(mouse.x+1 <= 15 && mazeArray[mouse.y][mouse.x+1].floodValue < floodAux) // Chequea derecha
+    if(mouse.x+1 <= 15 && mazeArray[mouse.y][mouse.x+1].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallRight == false
+    && mazeArray[mouse.y][mouse.x].rightChecked == false) // Chequea derecha
     {
         floodAux = mazeArray[mouse.y][mouse.x + 1].floodValue;
         moveDirection = RIGHT;
+        mazeArray[mouse.y][mouse.x].rightChecked == true;
     }
-    if(mouse.y+1 <= 15 && mazeArray[mouse.y+1][mouse.x].floodValue < floodAux) // Chequea abajo
+    if(mouse.y+1 <= 15 && mazeArray[mouse.y+1][mouse.x].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallBack == false
+    && mazeArray[mouse.y][mouse.x].backChecked == false) // Chequea abajo
     {
         floodAux = mazeArray[mouse.y+1][mouse.x].floodValue;
         moveDirection = DOWN;
+        mazeArray[mouse.y][mouse.x].backChecked == true;
     }
-    if(mouse.x-1 >= 0 && mazeArray[mouse.y][mouse.x-1].floodValue < floodAux) // Chequea izquierda
+    if(mouse.x-1 >= 0 && mazeArray[mouse.y][mouse.x-1].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallLeft == false
+    && mazeArray[mouse.y][mouse.x].leftChecked == false) // Chequea izquierda
     {
         floodAux = mazeArray[mouse.y][mouse.x-1].floodValue;
         moveDirection = LEFT;
+        mazeArray[mouse.y][mouse.x].leftChecked == true;
     }
     switch (moveDirection)
     {
@@ -124,8 +150,8 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
         default:
             break;
         }
-        break;
         mouse.y--;
+        break;
     case RIGHT:
         switch (mouse.mouseOrientation)
         {
@@ -196,8 +222,8 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
         default:
             break;
         }
-        break;
         mouse.x--;
+        break;
     default:
         break;
     }
@@ -208,13 +234,13 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
 void floodFill(Square mazeArray[16][16])
 {
     char mov = 1;
-    char n = 0;
+    int n = 0;
     while(mov != 0)
     {
         mov = 0;
         for(int i = 0; i < 16; i++)
         {
-            for (int j = 0; i < 16; i++)
+            for (int j = 0; j < 16; j++)
             {
                 if(mazeArray[i][j].floodValue == n)
                 {
