@@ -20,7 +20,7 @@ struct Square
     bool backChecked;
     bool leftChecked;
     char floodValue;
-    bool marked;
+    int visitedNum;
 };
 
 struct Mouse 
@@ -30,6 +30,7 @@ struct Mouse
         char x;
         char y;
     };
+    char runNumber;
 };
 
 void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse);
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]) {
     API::setText(0, 0, "abc");
 
     Square mazeArray[16][16];
-    Mouse mouse = {UP,{0,15}};
+    Mouse mouse = {UP,{0,15},1};
 
     for(int i = 0; i <= 15; i++)
     {
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]) {
             mazeArray[i][j].rightChecked = false;
             mazeArray[i][j].backChecked = false;
             mazeArray[i][j].leftChecked = false;
-            mazeArray[i][j].marked = false;            
+            mazeArray[i][j].visitedNum = 0;          
             if((i == 8 && j == 7) || (i == 7 && j == 8) || (i == 8 && j == 8) || (i == 7 && j == 7))
             {
                 mazeArray[i][j].floodValue = 0;
@@ -76,7 +77,7 @@ int main(int argc, char* argv[]) {
         }
         API::moveForward();*/
 
-        actualizarParedes(mazeArray,mouse);
+        actualizarParedes(mazeArray, mouse);
         floodFill(mazeArray);
         for(int i = 0; i <= 15; i++)
         {
@@ -98,34 +99,147 @@ int main(int argc, char* argv[]) {
 void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
 {
     char floodAux = 100;
-    Orientation moveDirection = UP;
-    if(mouse.y-1 >= 0 && mazeArray[mouse.y-1][mouse.x].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallFront == false
-    && mazeArray[mouse.y][mouse.x].frontChecked == false) // Chequea arriba
+    Orientation moveDirection = RIGHT;
+    char maxUnknownWalls = -1;
+    int visitedMin = 1000;
+    bool hasOptions = false;
+
+    log("switch de decision de movimiento");
+    switch (mouse.runNumber)
     {
-        floodAux = mazeArray[mouse.y-1][mouse.x].floodValue;
-        mazeArray[mouse.y][mouse.x].frontChecked == true;
+    case 1:
+        // Chequea arriba
+        if (mouse.y - 1 >= 0 && !mazeArray[mouse.y][mouse.x].wallFront) {
+            int unknownWalls =  !mazeArray[mouse.y - 1][mouse.x].frontChecked +
+                                !mazeArray[mouse.y - 1][mouse.x].rightChecked +
+                                !mazeArray[mouse.y - 1][mouse.x].backChecked +
+                                !mazeArray[mouse.y - 1][mouse.x].leftChecked;
+
+            if (unknownWalls > maxUnknownWalls ||
+            (unknownWalls == maxUnknownWalls /*&& mazeArray[mouse.y - 1][mouse.x].floodValue <= floodAux*/ && mazeArray[mouse.y - 1][mouse.x].visitedNum <= visitedMin)) {
+                floodAux = mazeArray[mouse.y - 1][mouse.x].floodValue;
+                maxUnknownWalls = unknownWalls;
+                moveDirection = UP;
+                visitedMin = mazeArray[mouse.y - 1][mouse.x].visitedNum;
+                hasOptions = true;
+            }
+        }
+
+        // Chequea derecha
+        if (mouse.x + 1 <= 15 && !mazeArray[mouse.y][mouse.x].wallRight) {
+            int unknownWalls =  !mazeArray[mouse.y][mouse.x + 1].frontChecked +
+                                !mazeArray[mouse.y][mouse.x + 1].rightChecked +
+                                !mazeArray[mouse.y][mouse.x + 1].backChecked +
+                                !mazeArray[mouse.y][mouse.x + 1].leftChecked;
+
+            if (unknownWalls > maxUnknownWalls ||
+            (unknownWalls == maxUnknownWalls /*&& mazeArray[mouse.y][mouse.x + 1].floodValue <= floodAux */&& mazeArray[mouse.y][mouse.x + 1].visitedNum <= visitedMin)) {
+                floodAux = mazeArray[mouse.y][mouse.x + 1].floodValue;
+                maxUnknownWalls = unknownWalls;
+                moveDirection = RIGHT;
+                visitedMin = mazeArray[mouse.y][mouse.x + 1].visitedNum;
+                hasOptions = true;
+            }
+        }
+
+        // Chequea abajo
+        if (mouse.y + 1 <= 15 && !mazeArray[mouse.y][mouse.x].wallBack) {
+            int unknownWalls =  !mazeArray[mouse.y + 1][mouse.x].frontChecked +
+                                !mazeArray[mouse.y + 1][mouse.x].rightChecked +
+                                !mazeArray[mouse.y + 1][mouse.x].backChecked +
+                                !mazeArray[mouse.y + 1][mouse.x].leftChecked;
+
+            if (unknownWalls > maxUnknownWalls ||
+            (unknownWalls == maxUnknownWalls /*&& mazeArray[mouse.y + 1][mouse.x].floodValue <= floodAux*/ && mazeArray[mouse.y + 1][mouse.x].visitedNum <= visitedMin)) {
+                floodAux = mazeArray[mouse.y + 1][mouse.x].floodValue;
+                maxUnknownWalls = unknownWalls;
+                moveDirection = DOWN;
+                visitedMin = mazeArray[mouse.y + 1][mouse.x].visitedNum;
+                hasOptions = true;
+            }
+        }
+
+        // Chequea izquierda
+        if (mouse.x - 1 >= 0 && !mazeArray[mouse.y][mouse.x].wallLeft) {
+            int unknownWalls =  !mazeArray[mouse.y][mouse.x - 1].frontChecked +
+                                !mazeArray[mouse.y][mouse.x - 1].rightChecked +
+                                !mazeArray[mouse.y][mouse.x - 1].backChecked +
+                                !mazeArray[mouse.y][mouse.x - 1].leftChecked;
+
+            if (unknownWalls > maxUnknownWalls ||
+            (unknownWalls == maxUnknownWalls /*&& mazeArray[mouse.y][mouse.x - 1].floodValue <= floodAux*/ && mazeArray[mouse.y][mouse.x - 1].visitedNum <= visitedMin) || 
+            (!(unknownWalls >= maxUnknownWalls) && mazeArray[mouse.y][mouse.x - 1].visitedNum <= visitedMin)) {
+                floodAux = mazeArray[mouse.y][mouse.x - 1].floodValue;
+                maxUnknownWalls = unknownWalls;
+                moveDirection = LEFT;
+                visitedMin = mazeArray[mouse.y][mouse.x - 1].visitedNum;
+                hasOptions = true;
+            }
+        }
+        
+        if(!hasOptions){
+            if (mouse.y - 1 >= 0 && !mazeArray[mouse.y][mouse.x].wallFront && mazeArray[mouse.y - 1][mouse.x].visitedNum <= visitedMin)
+            {
+                moveDirection = UP;
+                visitedMin = mazeArray[mouse.y - 1][mouse.x].visitedNum;
+            }
+            if (mouse.y + 1 <= 15 && !mazeArray[mouse.y][mouse.x].wallBack && mazeArray[mouse.y + 1][mouse.x].visitedNum <= visitedMin)
+            {
+                moveDirection = DOWN;
+                visitedMin = mazeArray[mouse.y + 1][mouse.x].visitedNum;
+            }
+            if (mouse.x - 1 >= 0 && !mazeArray[mouse.y][mouse.x].wallLeft && mazeArray[mouse.y][mouse.x - 1].visitedNum <= visitedMin)
+            {
+                moveDirection = LEFT;
+                visitedMin = mazeArray[mouse.y][mouse.x - 1].visitedNum;
+            }
+            if (mouse.x + 1 <= 15 && !mazeArray[mouse.y][mouse.x].wallRight && mazeArray[mouse.y][mouse.x + 1].visitedNum <= visitedMin)
+            {
+                moveDirection = RIGHT;
+                visitedMin = mazeArray[mouse.y][mouse.x + 1].visitedNum;
+            }
+        }
+
+        mazeArray[mouse.y][mouse.x].visitedNum++;
+
+        break;
+    case 2:
+        if(mouse.y-1 >= 0 && mazeArray[mouse.y-1][mouse.x].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallFront == false
+        && mazeArray[mouse.y][mouse.x].frontChecked == false) // Chequea arriba
+        {
+            floodAux = mazeArray[mouse.y-1][mouse.x].floodValue;
+            //mazeArray[mouse.y][mouse.x].frontChecked == true;
+        }
+        if(mouse.x+1 <= 15 && mazeArray[mouse.y][mouse.x+1].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallRight == false
+        && mazeArray[mouse.y][mouse.x].rightChecked == false) // Chequea derecha
+        {
+            floodAux = mazeArray[mouse.y][mouse.x + 1].floodValue;
+            moveDirection = RIGHT;
+            //mazeArray[mouse.y][mouse.x].rightChecked == true;
+        }
+        if(mouse.y+1 <= 15 && mazeArray[mouse.y+1][mouse.x].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallBack == false
+        && mazeArray[mouse.y][mouse.x].backChecked == false) // Chequea abajo
+        {
+            floodAux = mazeArray[mouse.y+1][mouse.x].floodValue;
+            moveDirection = DOWN;
+            //mazeArray[mouse.y][mouse.x].backChecked == true;
+        }
+        if(mouse.x-1 >= 0 && mazeArray[mouse.y][mouse.x-1].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallLeft == false
+        && mazeArray[mouse.y][mouse.x].leftChecked == false) // Chequea izquierda
+        {
+            floodAux = mazeArray[mouse.y][mouse.x-1].floodValue;
+            moveDirection = LEFT;
+            //mazeArray[mouse.y][mouse.x].leftChecked == true;
+        }
+
+        break;
+    case 3:
+        break;
+    default:
+        break;
     }
-    if(mouse.x+1 <= 15 && mazeArray[mouse.y][mouse.x+1].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallRight == false
-    && mazeArray[mouse.y][mouse.x].rightChecked == false) // Chequea derecha
-    {
-        floodAux = mazeArray[mouse.y][mouse.x + 1].floodValue;
-        moveDirection = RIGHT;
-        mazeArray[mouse.y][mouse.x].rightChecked == true;
-    }
-    if(mouse.y+1 <= 15 && mazeArray[mouse.y+1][mouse.x].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallBack == false
-    && mazeArray[mouse.y][mouse.x].backChecked == false) // Chequea abajo
-    {
-        floodAux = mazeArray[mouse.y+1][mouse.x].floodValue;
-        moveDirection = DOWN;
-        mazeArray[mouse.y][mouse.x].backChecked == true;
-    }
-    if(mouse.x-1 >= 0 && mazeArray[mouse.y][mouse.x-1].floodValue <= floodAux && mazeArray[mouse.y][mouse.x].wallLeft == false
-    && mazeArray[mouse.y][mouse.x].leftChecked == false) // Chequea izquierda
-    {
-        floodAux = mazeArray[mouse.y][mouse.x-1].floodValue;
-        moveDirection = LEFT;
-        mazeArray[mouse.y][mouse.x].leftChecked == true;
-    }
+    log("salio del switch de decision del movimiento");
+
     switch (moveDirection)
     {
     case UP:
@@ -152,6 +266,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
         }
         mouse.y--;
         break;
+
     case RIGHT:
         switch (mouse.mouseOrientation)
         {
@@ -176,6 +291,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
         }
         mouse.x++;
         break;
+
     case DOWN:
         switch (mouse.mouseOrientation)
         {
@@ -185,7 +301,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
             API::moveForward();
             break;
         case RIGHT:
-            API::turnLeft();
+            API::turnRight();
             API::moveForward();
             break;
         case DOWN:
@@ -200,6 +316,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
         }
         mouse.y++;
         break;
+        
     case LEFT:
         switch (mouse.mouseOrientation)
         {
@@ -229,40 +346,41 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
     }
 
     mouse.mouseOrientation = moveDirection;
-}
+    log("salio del switch de movimiento mouse.x = " + std::to_string(mouse.x) + " mouse.y " + std::to_string(mouse.y));
+    }
 
 void floodFill(Square mazeArray[16][16])
 {
-    char mov = 1;
+    bool mov = true;
     int n = 0;
-    while(mov != 0)
+    while(mov)
     {
-        mov = 0;
-        for(int i = 0; i < 16; i++)
+        mov = false;
+        for(int i = 0; i <= 15; i++)
         {
-            for (int j = 0; j < 16; j++)
+            for (int j = 0; j <= 15; j++)
             {
                 if(mazeArray[i][j].floodValue == n)
                 {
-                    if(i-1 >= 0 && mazeArray[i][j].wallFront == false && mazeArray[i-1][j].floodValue > n)
+                    if(i-1 >= 0 && !mazeArray[i][j].wallFront && mazeArray[i-1][j].floodValue > n)
                     {
                         mazeArray[i-1][j].floodValue = n+1;
-                        mov = 1;
+                        mov = true;
                     }
-                    if(j+1 <= 15 && mazeArray[i][j].wallRight == false && mazeArray[i][j+1].floodValue > n)
+                    if(j+1 <= 15 && !mazeArray[i][j].wallRight && mazeArray[i][j+1].floodValue > n)
                     {
                         mazeArray[i][j+1].floodValue = n+1;
-                        mov = 1;
+                        mov = true;
                     }
-                    if(i+1 <= 15 && mazeArray[i][j].wallBack == false && mazeArray[i+1][j].floodValue > n)
+                    if(i+1 <= 15 && !mazeArray[i][j].wallBack && mazeArray[i+1][j].floodValue > n)
                     {
                         mazeArray[i+1][j].floodValue = n+1;
-                        mov = 1;
+                        mov = true;
                     }
-                    if(j-1 >= 0 && mazeArray[i][j].wallLeft == false && mazeArray[i][j-1].floodValue > n)
+                    if(j-1 >= 0 && !mazeArray[i][j].wallLeft && mazeArray[i][j-1].floodValue > n)
                     {
                         mazeArray[i][j-1].floodValue = n+1;
-                        mov = 1;
+                        mov = true;
                     }
                 }
             }
@@ -271,69 +389,182 @@ void floodFill(Square mazeArray[16][16])
         n++;
 
     }
+
+    log("salio del while del floodfill");
 }
 
 void actualizarParedes(Square mazeArray[16][16], Mouse& mouse)
 {
+
+    mazeArray[mouse.y][mouse.x].frontChecked = true;
+    mazeArray[mouse.y][mouse.x].rightChecked = true;
+    mazeArray[mouse.y][mouse.x].backChecked = true;
+    mazeArray[mouse.y][mouse.x].leftChecked = true;
+
     switch (mouse.mouseOrientation)
     {
     case UP:
         if(API::wallFront())
         {
             mazeArray[mouse.y][mouse.x].wallFront = true;
+            
+            // Marcamos que la pared fue checkeada
+            mazeArray[mouse.y][mouse.x].frontChecked = true;
+            
+            if(mouse.y-1 >= 0)
+            {
+                mazeArray[mouse.y-1][mouse.x].wallBack = true;
+                    mazeArray[mouse.y-1][mouse.x].backChecked = true;
+            }
+
+            API::setWall(mouse.x,15 - mouse.y,'n');
         }
         if(API::wallRight())
         {
             mazeArray[mouse.y][mouse.x].wallRight = true;
+            mazeArray[mouse.y][mouse.x].rightChecked = true;
+            
+            if(mouse.x+1 <= 15)
+            {
+                mazeArray[mouse.y][mouse.x+1].wallLeft = true;
+                mazeArray[mouse.y][mouse.x+1].leftChecked = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'e');
         }
         if(API::wallLeft())
         {
             mazeArray[mouse.y][mouse.x].wallLeft = true;
+            mazeArray[mouse.y][mouse.x].leftChecked = true;
+            
+            if(mouse.x - 1 >= 0)
+            {
+                mazeArray[mouse.y][mouse.x-1].wallRight = true;
+                mazeArray[mouse.y][mouse.x-1].rightChecked = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'w');
         }
         break;
     case RIGHT:
         if(API::wallFront())
         {
-            mazeArray[mouse.y][mouse.x].wallRight = true;
+            mazeArray[mouse.y][mouse.x].wallRight = true;        
+            mazeArray[mouse.y][mouse.x].rightChecked = true;
+
+            if(mouse.x + 1 <= 15)
+            {
+                mazeArray[mouse.y][mouse.x+1].wallLeft = true;
+                mazeArray[mouse.y][mouse.x+1].leftChecked = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'e');
         }
         if(API::wallRight())
         {
             mazeArray[mouse.y][mouse.x].wallBack = true;
+            mazeArray[mouse.y][mouse.x].backChecked = true;
+            
+            if(mouse.y + 1 <= 15)
+            {
+               mazeArray[mouse.y+1][mouse.x].frontChecked = true; 
+               mazeArray[mouse.y+1][mouse.x].wallFront = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'s');
         }
         if(API::wallLeft())
         {
-            mazeArray[mouse.y][mouse.x].wallFront = true;
+            mazeArray[mouse.y][mouse.x].wallFront = true;           
+            mazeArray[mouse.y][mouse.x].frontChecked = true;
+            
+            if(mouse.y - 1 >= 0)
+            {
+                mazeArray[mouse.y-1][mouse.x].wallBack = true;
+                mazeArray[mouse.y-1][mouse.x].backChecked = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'n');
         }
         break;
     case DOWN:
         if(API::wallFront())
         {
             mazeArray[mouse.y][mouse.x].wallBack = true;
+            mazeArray[mouse.y][mouse.x].backChecked = true;
+            
+
+            if(mouse.y + 1 <= 15)
+            {
+                mazeArray[mouse.y+1][mouse.x].frontChecked = true;
+                mazeArray[mouse.y+1][mouse.x].wallFront = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'s');
         }
         if(API::wallRight())
         {
-            mazeArray[mouse.y][mouse.x].wallLeft = true;
+            mazeArray[mouse.y][mouse.x].wallLeft = true; 
+            mazeArray[mouse.y][mouse.x].leftChecked = true;
+           
+            if(mouse.x - 1 >= 0){
+                mazeArray[mouse.y][mouse.x-1].wallRight = true;
+                mazeArray[mouse.y][mouse.x-1].rightChecked = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'w');
         }
         if(API::wallLeft())
         {
             mazeArray[mouse.y][mouse.x].wallRight = true;
+            mazeArray[mouse.y][mouse.x].rightChecked = true;
+
+            if(mouse.x + 1 <= 15){
+                mazeArray[mouse.y][mouse.x+1].wallLeft = true;
+                mazeArray[mouse.y][mouse.x+1].leftChecked = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'e');
         }
         break;
     case LEFT:
         if(API::wallFront())
         {
-            mazeArray[mouse.y][mouse.x].wallLeft = true;   
+            mazeArray[mouse.y][mouse.x].wallLeft = true;  
+            mazeArray[mouse.y][mouse.x].leftChecked= true; 
+            
+            if(mouse.x - 1 >= 0){
+                mazeArray[mouse.y][mouse.x-1].rightChecked = true;
+                mazeArray[mouse.y][mouse.x-1].wallRight = true; 
+            }
+            
+            API::setWall(mouse.x,15-mouse.y,'w');
         }
         if(API::wallRight())
         {
             mazeArray[mouse.y][mouse.x].wallFront = true;
+            mazeArray[mouse.y][mouse.x].frontChecked = true;
+            if(mouse.y - 1 >= 0){
+                mazeArray[mouse.y-1][mouse.x].wallBack = true;
+                mazeArray[mouse.y-1][mouse.x].backChecked = true;
+            }
+
+            API::setWall(mouse.x,15-mouse.y,'n');
         }
         if(API::wallLeft())
         {
             mazeArray[mouse.y][mouse.x].wallBack = true; 
+            mazeArray[mouse.y][mouse.x].backChecked = true;
+            if(mouse.y + 1 <= 15){
+                mazeArray[mouse.y+1][mouse.x].wallFront = true; 
+                mazeArray[mouse.y+1][mouse.x].frontChecked = true;
+            }
+            API::setWall(mouse.x,15-mouse.y,'s');
         }
         break;
     default:
         break;
     }
+
+    log("fin de actualizar paredes");
 }
