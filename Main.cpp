@@ -75,15 +75,6 @@ int main(int argc, char* argv[]) {
     while (true) {
 
         actualizarParedes(mazeArray, mouse);
-        floodFill(mazeArray);
-        for(int i = 0; i <= 15; i++)
-        {
-            for(int j = 0; j <= 15; j++)
-            {
-                std::cerr << std::to_string(mazeArray[i][j].floodValue) << "  ";
-            }
-            std::cerr << std::endl;        
-        }
         std::cerr << std::endl;
         checkNeighborsAndMove(mazeArray, mouse);
         if(mazeArray[mouse.y][mouse.x].floodValue == 0)
@@ -92,6 +83,17 @@ int main(int argc, char* argv[]) {
         }
 
     }
+
+    floodFill(mazeArray);
+
+    for(int i = 0; i <= 15; i++)
+        {
+            for(int j = 0; j <= 15; j++)
+            {
+                std::cerr << std::to_string(mazeArray[i][j].floodValue) << "\t";
+            }
+            std::cerr << std::endl;        
+        }
 
     while (true) {
         bool reverseFlood = true;
@@ -181,7 +183,7 @@ int main(int argc, char* argv[]) {
         {
             break;
         }
-        log("sigo en el loop");
+        //log("sigo en el loop");
     }
 }
 
@@ -464,22 +466,22 @@ void floodFill(Square mazeArray[16][16])
             {
                 if(mazeArray[i][j].floodValue == n)
                 {
-                    if(i-1 >= 0 && !mazeArray[i][j].wallFront && mazeArray[i-1][j].floodValue > n)
+                    if(i-1 >= 0 && !mazeArray[i][j].wallFront && mazeArray[i-1][j].floodValue > n && mazeArray[i-1][j].visitedNum != 0)
                     {
                         mazeArray[i-1][j].floodValue = n+1;
                         mov = true;
                     }
-                    if(j+1 <= 15 && !mazeArray[i][j].wallRight && mazeArray[i][j+1].floodValue > n)
+                    if(j+1 <= 15 && !mazeArray[i][j].wallRight && mazeArray[i][j+1].floodValue > n && mazeArray[i][j+1].visitedNum != 0)
                     {
                         mazeArray[i][j+1].floodValue = n+1;
                         mov = true;
                     }
-                    if(i+1 <= 15 && !mazeArray[i][j].wallBack && mazeArray[i+1][j].floodValue > n)
+                    if(i+1 <= 15 && !mazeArray[i][j].wallBack && mazeArray[i+1][j].floodValue > n && mazeArray[i+1][j].visitedNum != 0)
                     {
                         mazeArray[i+1][j].floodValue = n+1;
                         mov = true;
                     }
-                    if(j-1 >= 0 && !mazeArray[i][j].wallLeft && mazeArray[i][j-1].floodValue > n)
+                    if(j-1 >= 0 && !mazeArray[i][j].wallLeft && mazeArray[i][j-1].floodValue > n && mazeArray[i][j-1].visitedNum != 0)
                     {
                         mazeArray[i][j-1].floodValue = n+1;
                         mov = true;
