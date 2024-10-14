@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <stack>
 
 #include "API.h"
 
@@ -19,6 +20,7 @@ struct Square
     bool rightChecked;
     bool backChecked;
     bool leftChecked;
+    bool visited;
     char floodValue;
     int visitedNum;
 };
@@ -44,6 +46,7 @@ int main(int argc, char* argv[]) {
 
     Square mazeArray[16][16];
     Mouse mouse = {UP,{0,15},1};
+    std::stack<Orientation> movementsStack;
 
     for(int i = 0; i <= 15; i++)
     {
@@ -57,6 +60,7 @@ int main(int argc, char* argv[]) {
             mazeArray[i][j].rightChecked = false;
             mazeArray[i][j].backChecked = false;
             mazeArray[i][j].leftChecked = false;
+            mazeArray[i][j].visited = false;
             mazeArray[i][j].visitedNum = 0;          
             if((i == 8 && j == 7) || (i == 7 && j == 8) || (i == 8 && j == 8) || (i == 7 && j == 7))
             {
@@ -69,13 +73,6 @@ int main(int argc, char* argv[]) {
     }
 
     while (true) {
-        /*if (!API::wallLeft()) {
-            API::turnLeft();
-        }
-        while (API::wallFront()) {
-            API::turnRight();
-        }
-        API::moveForward();*/
 
         actualizarParedes(mazeArray, mouse);
         floodFill(mazeArray);
@@ -93,6 +90,98 @@ int main(int argc, char* argv[]) {
         {
             break;
         }
+
+    }
+
+    while (true) {
+        bool reverseFlood = true;
+
+        API::setColor(mouse.x, 15 - mouse.y, 'G');
+
+        if(reverseFlood)
+        {
+            mazeArray[mouse.y][mouse.x].visited = true;
+            if(mouse.x + 1 <= 15 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y][mouse.x + 1].floodValue 
+                && !mazeArray[mouse.y][mouse.x + 1].visited && !mazeArray[mouse.y][mouse.x].wallRight 
+                && mazeArray[mouse.y][mouse.x + 1].visitedNum != 0)
+            {
+                
+                mouse.x++;
+                movementsStack.push(LEFT);
+            }
+            else if(mouse.x - 1 >= 0 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y][mouse.x - 1].floodValue 
+                && !mazeArray[mouse.y][mouse.x - 1].visited && !mazeArray[mouse.y][mouse.x].wallLeft
+                && mazeArray[mouse.y][mouse.x - 1].visitedNum != 0)
+            {
+                mouse.x--;
+                movementsStack.push(RIGHT);
+            }
+            else if(mouse.y + 1 <= 15 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y + 1][mouse.x].floodValue 
+                && !mazeArray[mouse.y + 1][mouse.x].visited && !mazeArray[mouse.y][mouse.x].wallBack
+                && mazeArray[mouse.y + 1][mouse.x].visitedNum != 0)
+            {
+                mouse.y++;
+                movementsStack.push(UP);
+            }
+            else if(mouse.y - 1 >= 0 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y - 1][mouse.x].floodValue 
+                && !mazeArray[mouse.y - 1][mouse.x].visited && !mazeArray[mouse.y][mouse.x].wallFront
+                && mazeArray[mouse.y - 1][mouse.x].visitedNum != 0)
+            {
+                mouse.y--;
+                movementsStack.push(DOWN);
+            }
+        }
+        else
+        {
+            switch (movementsStack.top())
+            {
+            case UP:
+                mouse.y--;
+                movementsStack.pop();
+                break;
+            case RIGHT:
+                mouse.x++;
+                movementsStack.pop();
+                break;
+            case DOWN:
+                mouse.y++;
+                movementsStack.pop();
+                break;
+            case LEFT:
+                mouse.x--;
+                movementsStack.pop();
+                break;
+            default:
+                break;
+            }
+
+            if(mouse.x + 1 <= 15 && !mazeArray[mouse.y][mouse.x].wallRight && !mazeArray[mouse.y][mouse.x + 1].visited)
+            {
+                reverseFlood = true;
+            }
+            if(mouse.x - 1 >= 0 && !mazeArray[mouse.y][mouse.x].wallLeft && !mazeArray[mouse.y][mouse.x - 1].visited)
+            {
+                reverseFlood = true;
+            }
+            if(mouse.y + 1 <= 15 && !mazeArray[mouse.y][mouse.x].wallBack && !mazeArray[mouse.y + 1][mouse.x].visited)
+            {
+                reverseFlood = true;
+            }
+            if(mouse.y - 1 >= 0 && !mazeArray[mouse.y][mouse.x].wallFront && !mazeArray[mouse.y - 1][mouse.x].visited)
+            {
+                reverseFlood = true;
+            }
+        }
+
+        if(mazeArray[mouse.y][mouse.x].floodValue == mazeArray[15][0].floodValue && (mouse.x != 0 || mouse.y != 15))
+        {
+            reverseFlood = false;
+        }
+        else if(mazeArray[mouse.y][mouse.x].floodValue == mazeArray[15][0].floodValue && mouse.x == 0 && mouse.y == 15)
+        {
+            break;
+        }
+        log("sigo en el loop");
     }
 }
 
@@ -351,6 +440,19 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
 
 void floodFill(Square mazeArray[16][16])
 {
+    for(int i = 0; i <= 15; i++)
+    {
+        for(int j = 0; j <= 15; j++)
+        {         
+            if((i == 8 && j == 7) || (i == 7 && j == 8) || (i == 8 && j == 8) || (i == 7 && j == 7))
+            {
+                mazeArray[i][j].floodValue = 0;
+            }else
+            {
+                mazeArray[i][j].floodValue = 100;
+            }
+        }
+    }
     bool mov = true;
     int n = 0;
     while(mov)
