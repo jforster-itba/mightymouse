@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     while (true) {
 
         actualizarParedes(mazeArray, mouse);
-        std::cerr << std::endl;
+        floodFill(mazeArray);
         checkNeighborsAndMove(mazeArray, mouse);
         if(mazeArray[mouse.y][mouse.x].floodValue == 0)
         {
@@ -100,13 +100,15 @@ int main(int argc, char* argv[]) {
         log("arranca while inicio");
         API::setColor(mouse.x, 15 - mouse.y, 'G');
 
+        mazeArray[mouse.y][mouse.x].visited = true;
+
         // prueba para salir de callejon
         int wallsNumber = mazeArray[mouse.y][mouse.x].wallBack + mazeArray[mouse.y][mouse.x].wallFront
                         + mazeArray[mouse.y][mouse.x].wallRight + mazeArray[mouse.y][mouse.x].wallLeft;
         
         if(wallsNumber == 3)
         {
-            while(wallsNumber != 1){
+            while(wallsNumber != 1){  
                 if(!movementsStack.empty())
                 {
                     switch (movementsStack.top())
@@ -145,7 +147,6 @@ int main(int argc, char* argv[]) {
         if(reverseFlood)
         {
             log("reverseflood inicio");
-            mazeArray[mouse.y][mouse.x].visited = true;
             if(mouse.x + 1 <= 15 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y][mouse.x + 1].floodValue 
                 && !mazeArray[mouse.y][mouse.x + 1].visited && !mazeArray[mouse.y][mouse.x].wallRight 
                 && mazeArray[mouse.y][mouse.x + 1].visitedNum != 0)
@@ -157,6 +158,7 @@ int main(int argc, char* argv[]) {
                 && !mazeArray[mouse.y][mouse.x - 1].visited && !mazeArray[mouse.y][mouse.x].wallLeft
                 && mazeArray[mouse.y][mouse.x - 1].visitedNum != 0)
             {
+                log("RIGHT");
                 mouse.x--;
                 movementsStack.push(RIGHT);
             }
@@ -195,6 +197,7 @@ int main(int argc, char* argv[]) {
                     movementsStack.pop();
                     break;
                 case RIGHT:
+                    log("right pero de la vuelta");
                     API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.x++;
                     movementsStack.pop();
@@ -232,7 +235,7 @@ int main(int argc, char* argv[]) {
             
         }
 
-        if(mazeArray[mouse.y][mouse.x].floodValue == mazeArray[15][0].floodValue && (mouse.x != 0 || mouse.y != 15))
+        if(mazeArray[mouse.y][mouse.x].floodValue >= mazeArray[15][0].floodValue && (mouse.x != 0 || mouse.y != 15))
         {
             reverseFlood = false;
         }
@@ -265,7 +268,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
                                 !mazeArray[mouse.y - 1][mouse.x].leftChecked;
 
             if (unknownWalls > maxUnknownWalls ||
-            (unknownWalls == maxUnknownWalls /*&& mazeArray[mouse.y - 1][mouse.x].floodValue <= floodAux*/ && mazeArray[mouse.y - 1][mouse.x].visitedNum <= visitedMin)) {
+            (unknownWalls == maxUnknownWalls && mazeArray[mouse.y - 1][mouse.x].floodValue <= floodAux && mazeArray[mouse.y - 1][mouse.x].visitedNum <= visitedMin)) {
                 floodAux = mazeArray[mouse.y - 1][mouse.x].floodValue;
                 maxUnknownWalls = unknownWalls;
                 moveDirection = UP;
@@ -282,7 +285,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
                                 !mazeArray[mouse.y][mouse.x + 1].leftChecked;
 
             if (unknownWalls > maxUnknownWalls ||
-            (unknownWalls == maxUnknownWalls /*&& mazeArray[mouse.y][mouse.x + 1].floodValue <= floodAux */&& mazeArray[mouse.y][mouse.x + 1].visitedNum <= visitedMin)) {
+            (unknownWalls == maxUnknownWalls && mazeArray[mouse.y][mouse.x + 1].floodValue <= floodAux && mazeArray[mouse.y][mouse.x + 1].visitedNum <= visitedMin)) {
                 floodAux = mazeArray[mouse.y][mouse.x + 1].floodValue;
                 maxUnknownWalls = unknownWalls;
                 moveDirection = RIGHT;
@@ -299,7 +302,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
                                 !mazeArray[mouse.y + 1][mouse.x].leftChecked;
 
             if (unknownWalls > maxUnknownWalls ||
-            (unknownWalls == maxUnknownWalls /*&& mazeArray[mouse.y + 1][mouse.x].floodValue <= floodAux*/ && mazeArray[mouse.y + 1][mouse.x].visitedNum <= visitedMin)) {
+            (unknownWalls == maxUnknownWalls && mazeArray[mouse.y + 1][mouse.x].floodValue <= floodAux && mazeArray[mouse.y + 1][mouse.x].visitedNum <= visitedMin)) {
                 floodAux = mazeArray[mouse.y + 1][mouse.x].floodValue;
                 maxUnknownWalls = unknownWalls;
                 moveDirection = DOWN;
@@ -316,7 +319,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
                                 !mazeArray[mouse.y][mouse.x - 1].leftChecked;
 
             if (unknownWalls > maxUnknownWalls ||
-            (unknownWalls == maxUnknownWalls /*&& mazeArray[mouse.y][mouse.x - 1].floodValue <= floodAux*/ && mazeArray[mouse.y][mouse.x - 1].visitedNum <= visitedMin) || 
+            (unknownWalls == maxUnknownWalls && mazeArray[mouse.y][mouse.x - 1].floodValue <= floodAux && mazeArray[mouse.y][mouse.x - 1].visitedNum <= visitedMin) || 
             (!(unknownWalls >= maxUnknownWalls) && mazeArray[mouse.y][mouse.x - 1].visitedNum <= visitedMin)) {
                 floodAux = mazeArray[mouse.y][mouse.x - 1].floodValue;
                 maxUnknownWalls = unknownWalls;
