@@ -111,28 +111,28 @@ int main(int argc, char* argv[]) {
         
         if(wallsNumber == 3)
         {
-            while(wallsNumber != 1){  
+            while(wallsNumber >= 1){  
                 if(!forwardMovementsStack.empty())
                 {
                     switch (forwardMovementsStack.top())
                     {
                     case UP:
-                        API::clearColor(mouse.x, 15 - mouse.y);
+                        API::setColor(mouse.x, 15 - mouse.y, 'R');
                         mouse.y--;
                         forwardMovementsStack.pop();
                         break;
                     case RIGHT:
-                        API::clearColor(mouse.x, 15 - mouse.y);
+                        API::setColor(mouse.x, 15 - mouse.y, 'R');
                         mouse.x++;
                         forwardMovementsStack.pop();
                         break;
                     case DOWN:
-                        API::clearColor(mouse.x, 15 - mouse.y);
+                        API::setColor(mouse.x, 15 - mouse.y, 'R');
                         mouse.y++;
                         forwardMovementsStack.pop();
                         break;
                     case LEFT:
-                        API::clearColor(mouse.x, 15 - mouse.y);
+                        API::setColor(mouse.x, 15 - mouse.y, 'R');
                         mouse.x--;
                         forwardMovementsStack.pop();
                         break;
@@ -195,23 +195,23 @@ int main(int argc, char* argv[]) {
             switch (forwardMovementsStack.top())
                 {
                 case UP:
-                    API::clearColor(mouse.x, 15 - mouse.y);
+                    //API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.y--;
                     forwardMovementsStack.pop();
                     break;
                 case RIGHT:
                     log("right pero de la vuelta");
-                    API::clearColor(mouse.x, 15 - mouse.y);
+                    //API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.x++;
                     forwardMovementsStack.pop();
                     break;
                 case DOWN:
-                    API::clearColor(mouse.x, 15 - mouse.y);
+                    //API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.y++;
                     forwardMovementsStack.pop();
                     break;
                 case LEFT:
-                    API::clearColor(mouse.x, 15 - mouse.y);
+                    //API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.x--;
                     forwardMovementsStack.pop();
                     break;
