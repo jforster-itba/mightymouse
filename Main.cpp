@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
 
     Square mazeArray[16][16];
     Mouse mouse = {UP,{0,15},1};
-    std::stack<Orientation> movementsStack;
+    std::stack<Orientation> forwardMovementsStack;
     bool reverseFlood = true;
 
     for(int i = 0; i <= 15; i++)
@@ -96,6 +96,9 @@ int main(int argc, char* argv[]) {
             std::cerr << std::endl;        
         }
 
+    char mouseCenterX = mouse.x;
+    char mouseCenterY = mouse.y;
+
     while (true) {
         log("arranca while inicio");
         API::setColor(mouse.x, 15 - mouse.y, 'G');
@@ -109,29 +112,29 @@ int main(int argc, char* argv[]) {
         if(wallsNumber == 3)
         {
             while(wallsNumber != 1){  
-                if(!movementsStack.empty())
+                if(!forwardMovementsStack.empty())
                 {
-                    switch (movementsStack.top())
+                    switch (forwardMovementsStack.top())
                     {
                     case UP:
                         API::clearColor(mouse.x, 15 - mouse.y);
                         mouse.y--;
-                        movementsStack.pop();
+                        forwardMovementsStack.pop();
                         break;
                     case RIGHT:
                         API::clearColor(mouse.x, 15 - mouse.y);
                         mouse.x++;
-                        movementsStack.pop();
+                        forwardMovementsStack.pop();
                         break;
                     case DOWN:
                         API::clearColor(mouse.x, 15 - mouse.y);
                         mouse.y++;
-                        movementsStack.pop();
+                        forwardMovementsStack.pop();
                         break;
                     case LEFT:
                         API::clearColor(mouse.x, 15 - mouse.y);
                         mouse.x--;
-                        movementsStack.pop();
+                        forwardMovementsStack.pop();
                         break;
                     default:
                         break;
@@ -152,7 +155,7 @@ int main(int argc, char* argv[]) {
                 && mazeArray[mouse.y][mouse.x + 1].visitedNum != 0)
             {
                 mouse.x++;
-                movementsStack.push(LEFT);
+                forwardMovementsStack.push(LEFT);
             }
             else if(mouse.x - 1 >= 0 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y][mouse.x - 1].floodValue 
                 && !mazeArray[mouse.y][mouse.x - 1].visited && !mazeArray[mouse.y][mouse.x].wallLeft
@@ -160,21 +163,21 @@ int main(int argc, char* argv[]) {
             {
                 log("RIGHT");
                 mouse.x--;
-                movementsStack.push(RIGHT);
+                forwardMovementsStack.push(RIGHT);
             }
             else if(mouse.y + 1 <= 15 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y + 1][mouse.x].floodValue 
                 && !mazeArray[mouse.y + 1][mouse.x].visited && !mazeArray[mouse.y][mouse.x].wallBack
                 && mazeArray[mouse.y + 1][mouse.x].visitedNum != 0)
             {
                 mouse.y++;
-                movementsStack.push(UP);
+                forwardMovementsStack.push(UP);
             }
             else if(mouse.y - 1 >= 0 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y - 1][mouse.x].floodValue 
                 && !mazeArray[mouse.y - 1][mouse.x].visited && !mazeArray[mouse.y][mouse.x].wallFront
                 && mazeArray[mouse.y - 1][mouse.x].visitedNum != 0)
             {
                 mouse.y--;
-                movementsStack.push(DOWN);
+                forwardMovementsStack.push(DOWN);
             }
             else   // Callejon sin salida
             {
@@ -189,28 +192,28 @@ int main(int argc, char* argv[]) {
             *   Los movimientos fueron pusheados inversamente a los realizados para que el 
             *   stack contenga los movimientos que tiene que HACER para volver al INICIO.
             */
-            switch (movementsStack.top())
+            switch (forwardMovementsStack.top())
                 {
                 case UP:
                     API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.y--;
-                    movementsStack.pop();
+                    forwardMovementsStack.pop();
                     break;
                 case RIGHT:
                     log("right pero de la vuelta");
                     API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.x++;
-                    movementsStack.pop();
+                    forwardMovementsStack.pop();
                     break;
                 case DOWN:
                     API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.y++;
-                    movementsStack.pop();
+                    forwardMovementsStack.pop();
                     break;
                 case LEFT:
                     API::clearColor(mouse.x, 15 - mouse.y);
                     mouse.x--;
-                    movementsStack.pop();
+                    forwardMovementsStack.pop();
                     break;
                 default:
                     break;
@@ -245,6 +248,167 @@ int main(int argc, char* argv[]) {
             break;
         }
         log("fin while inicio");
+    }
+
+    mouse.x = mouseCenterX;
+    mouse.y = mouseCenterY;
+
+    log("Despues de buscar camino");
+
+    switch (mouse.mouseOrientation)
+    {
+    case UP:
+        API::turnLeft();
+        API::turnLeft();
+        mouse.mouseOrientation = DOWN;
+        break;
+    case RIGHT:
+        API::turnLeft();
+        API::turnLeft();
+        mouse.mouseOrientation = LEFT;
+        break;
+    case DOWN:
+        API::turnLeft();
+        API::turnLeft();
+        mouse.mouseOrientation = UP;
+        break;
+    case LEFT:
+        API::turnLeft();
+        API::turnLeft();
+        mouse.mouseOrientation = RIGHT;
+        break;
+    default:
+        break;
+    }
+
+    log("llegue");
+
+    std::stack<Orientation> reverseMovementStack;
+
+    while(!forwardMovementsStack.empty())
+    {
+        reverseMovementStack.push(forwardMovementsStack.top());
+        forwardMovementsStack.pop();
+    }
+
+    while (true) {
+
+        switch (reverseMovementStack.top())
+        {
+        case DOWN:
+            switch (mouse.mouseOrientation)
+            {
+            case UP:
+                API::moveForward();
+                break;
+            case RIGHT:
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case DOWN:
+                API::turnRight();
+                API::turnRight();
+                API::moveForward();
+                break;
+            case LEFT:
+                API::turnRight();
+                API::moveForward();
+                break;
+            default:
+                break;
+            }
+            mouse.y--;
+            mouse.mouseOrientation = UP;
+            
+        break;
+
+        case LEFT:
+            switch (mouse.mouseOrientation)
+            {
+            case UP:
+                API::turnRight();
+                API::moveForward();
+                break;
+            case RIGHT:
+                API::moveForward();
+                break;
+            case DOWN:
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case LEFT:
+                API::turnLeft();
+                API::turnLeft();
+                API::moveForward();
+                break;
+            default:
+                break;
+            }
+            mouse.x++;
+            mouse.mouseOrientation = RIGHT;
+            break;
+
+        case UP:
+            switch (mouse.mouseOrientation)
+            {
+            case UP:
+                API::turnLeft();
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case RIGHT:
+                API::turnRight();
+                API::moveForward();
+                break;
+            case DOWN:
+                API::moveForward();
+                break;
+            case LEFT:
+                API::turnLeft();
+                API::moveForward();
+                break;
+            default:
+                break;
+            }
+            mouse.y++;
+            mouse.mouseOrientation = DOWN;
+            break;
+            
+        case RIGHT:
+            switch (mouse.mouseOrientation)
+            {
+            case UP:
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case RIGHT:
+                API::turnLeft();
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case DOWN:
+                API::turnRight();
+                API::moveForward();
+                break;
+            case LEFT:
+                API::moveForward();
+                break;
+            default:
+                break;
+            }
+            mouse.x--;
+            mouse.mouseOrientation = LEFT;
+            break;
+        default:
+            break;
+        }
+
+        reverseMovementStack.pop();
+
+        if(mouse.x == 0 && mouse.y == 15)
+        {
+            break;
+        }
     }
 }
 
