@@ -605,6 +605,8 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
             }
         }
 
+        mazeArray[mouse.y][mouse.x].visitedNum++;
+
         break;
     default:
         break;
