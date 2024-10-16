@@ -452,19 +452,21 @@ int main(int argc, char* argv[]) {
     }
 
     // Busqueda del camino mas rapido
-    while (true) {
+    //if(){
+        while (true) {
 
-        actualizarParedes(mazeArray, mouse);
-        floodFillCenter(mazeArray,mouse);
-        checkNeighborsAndMove(mazeArray, mouse, movementsStack);
-        if(mazeArray[mouse.y][mouse.x].floodValue == 0)
-        {
-            // Llego al inicio
-            break;
+            actualizarParedes(mazeArray, mouse);
+            floodFillCenter(mazeArray,mouse);
+            checkNeighborsAndMove(mazeArray, mouse, movementsStack);
+            if(mazeArray[mouse.y][mouse.x].floodValue == 0)
+            {
+                // Llego al inicio
+                break;
+            }
+            API::setColor(mouse.x, 15 - mouse.y, 'Y');
+
         }
-        API::setColor(mouse.x, 15 - mouse.y, 'Y');
-
-    }
+    //}
 
 }
 
@@ -574,66 +576,6 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse, std::stack<Or
             }
         }
         
-        wallsNumber = mazeArray[mouse.y][mouse.x].wallBack + mazeArray[mouse.y][mouse.x].wallFront
-                    + mazeArray[mouse.y][mouse.x].wallRight + mazeArray[mouse.y][mouse.x].wallLeft;
-        /*
-        if(wallsNumber == 3)
-        {
-            while(wallsNumber > 1){  
-                if(!movementsStack.empty())
-                {
-                    switch (movementsStack.top())
-                    {
-                    case UP:
-                        mouse.y--;
-                        movementsStack.pop();
-                        mouse.mouseOrientation = UP;
-                        switch (mouse.mouseOrientation)
-                        {
-                            case UP:
-                                API::moveForward();
-                                break;
-                            case RIGHT:
-                                API::turnLeft();
-                                API::moveForward();
-                                break;
-                            case DOWN:
-                                API::turnRight();
-                                API::turnRight();
-                                API::moveForward();
-                                break;
-                            case LEFT:
-                                API::turnRight();
-                                API::moveForward();
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
-                    case RIGHT:
-                        mouse.x++;
-                        movementsStack.pop();
-                        mouse.mouseOrientation = RIGHT;
-                        break;
-                    case DOWN:
-                        mouse.y++;
-                        movementsStack.pop();
-                        mouse.mouseOrientation = DOWN;
-                        break;
-                    case LEFT:
-                        mouse.x--;
-                        movementsStack.pop();
-                        mouse.mouseOrientation = LEFT;
-                        break;
-                    default:
-                        break;
-                    }
-                }
-                wallsNumber = mazeArray[mouse.y][mouse.x].wallBack + mazeArray[mouse.y][mouse.x].wallFront
-                            + mazeArray[mouse.y][mouse.x].wallRight + mazeArray[mouse.y][mouse.x].wallLeft;
-            }
-        }
-*/
         mazeArray[mouse.y][mouse.x].visitedNum++;
 
         break;
