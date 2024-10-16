@@ -58,6 +58,7 @@ int main(int argc, char* argv[]) {
     bool reverseFlood = true;
     int nMovements = 0;
     int nVisited = 0;
+    char hasArrivedCenter = 0;
 
     for(int i = 0; i <= 15; i++)
     {
@@ -95,6 +96,7 @@ int main(int argc, char* argv[]) {
         checkNeighborsAndMove(mazeArray, mouse, movementsStack);
         if(mazeArray[mouse.y][mouse.x].floodValue == 0)
         {
+            hasArrivedCenter = 1;
             break;
         } 
         else if(nMovements%10 == 0) 
@@ -452,7 +454,123 @@ int main(int argc, char* argv[]) {
     }
 
     // Busqueda del camino mas rapido
-    //if(){
+    if(hasArrivedCenter)
+    {
+        
+        switch (forwardMovementsStack.top())
+        {
+        case DOWN:
+            switch (mouse.mouseOrientation)
+            {
+            case UP:
+                API::moveForward();
+                break;
+            case RIGHT:
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case DOWN:
+                API::turnRight();
+                API::turnRight();
+                API::moveForward();
+                break;
+            case LEFT:
+                API::turnRight();
+                API::moveForward();
+                break;
+            default:
+                break;
+            }
+            mouse.y--;
+            mouse.mouseOrientation = UP;
+            
+        break;
+
+        case LEFT:
+            switch (mouse.mouseOrientation)
+            {
+            case UP:
+                API::turnRight();
+                API::moveForward();
+                break;
+            case RIGHT:
+                API::moveForward();
+                break;
+            case DOWN:
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case LEFT:
+                API::turnLeft();
+                API::turnLeft();
+                API::moveForward();
+                break;
+            default:
+                break;
+            }
+            mouse.x++;
+            mouse.mouseOrientation = RIGHT;
+            break;
+
+        case UP:
+            switch (mouse.mouseOrientation)
+            {
+            case UP:
+                API::turnLeft();
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case RIGHT:
+                API::turnRight();
+                API::moveForward();
+                break;
+            case DOWN:
+                API::moveForward();
+                break;
+            case LEFT:
+                API::turnLeft();
+                API::moveForward();
+                break;
+            default:
+                break;
+            }
+            mouse.y++;
+            mouse.mouseOrientation = DOWN;
+            break;
+            
+        case RIGHT:
+            switch (mouse.mouseOrientation)
+            {
+            case UP:
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case RIGHT:
+                API::turnLeft();
+                API::turnLeft();
+                API::moveForward();
+                break;
+            case DOWN:
+                API::turnRight();
+                API::moveForward();
+                break;
+            case LEFT:
+                API::moveForward();
+                break;
+            default:
+                break;
+            }
+            mouse.x--;
+            mouse.mouseOrientation = LEFT;
+            break;
+        default:
+            break;
+        }
+
+        forwardMovementsStack.pop();
+    }
+    else
+    {
         while (true) {
 
             actualizarParedes(mazeArray, mouse);
@@ -466,7 +584,7 @@ int main(int argc, char* argv[]) {
             API::setColor(mouse.x, 15 - mouse.y, 'Y');
 
         }
-    //}
+    }
 
 }
 
