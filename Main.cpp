@@ -1,10 +1,11 @@
 #include <iostream>
 #include <string>
 #include <stack>
+#include <chrono>
 
 #include "API.h"
 
-#define BREAK_NUMBER 200
+#define BREAK_NUMBER 256
 
 enum Orientation {UP = 1, RIGHT, LEFT, DOWN};
 
@@ -37,8 +38,9 @@ struct Mouse
     char runNumber;
 };
 
-void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse);
-void floodFill(Square mazeArray[16][16]);
+void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse, std::stack<Orientation>& movementsStack);
+void floodFillCenter(Square mazeArray[16][16], Mouse& mouse);
+void floodFillMouse(Square mazeArray[16][16], Mouse& mouse);
 void actualizarParedes(Square mazeArray[16][16], Mouse& mouse);
 
 int main(int argc, char* argv[]) {
@@ -49,6 +51,10 @@ int main(int argc, char* argv[]) {
     Square mazeArray[16][16];
     Mouse mouse = {UP,{0,15},1};
     std::stack<Orientation> forwardMovementsStack;
+    std::stack<Orientation> movementsStack;
+
+    auto start = std::chrono::high_resolution_clock::now();
+
     bool reverseFlood = true;
     int nMovements = 0;
     int nVisited = 0;
@@ -76,39 +82,41 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-
+    
+    //exploracion
     while (true) {
 
+        nVisited = 0;
+        
+        auto now = std::chrono::high_resolution_clock::now();
+        
         actualizarParedes(mazeArray, mouse);
-        floodFill(mazeArray);
-        checkNeighborsAndMove(mazeArray, mouse);
+        floodFillCenter(mazeArray,mouse);
+        checkNeighborsAndMove(mazeArray, mouse, movementsStack);
         if(mazeArray[mouse.y][mouse.x].floodValue == 0)
         {
             break;
-        }
+        } 
         else if(nMovements%10 == 0) 
-        // Condicion para dejar de explorar: 200 casillas exploradas. Lo revisa cada 10 movimientos
+        // Condicion para dejar de explorar: 200 casillas exploradas. Lo revisa cada 10 movimientos.
         {
             for(int i = 0; i <= 15; i++)
             {
                 for(int j = 0; j <= 15; j++)
                 {
-                    if(mazeArray[mouse.y][mouse.x].visitedNum >= 1){
+                    if(mazeArray[i][j].visitedNum >= 1){
                         nVisited++;
                     }
                 }
             }
-            if (nVisited >= BREAK_NUMBER){
+            std::chrono::duration<double> elapsed = now - start;
+            if (nVisited >= BREAK_NUMBER || elapsed.count() >= 120){
                 break;
             }
         }
         nMovements++;
-
-    }
-
-    floodFill(mazeArray);
-
-    for(int i = 0; i <= 15; i++)
+        // chequeamos si anda el floodfill
+        for(int i = 0; i <= 15; i++)
         {
             for(int j = 0; j <= 15; j++)
             {
@@ -116,13 +124,24 @@ int main(int argc, char* argv[]) {
             }
             std::cerr << std::endl;        
         }
+    }
+
+    for(int i = 0; i <= 15; i++)
+    {
+        for(int j = 0; j <= 15; j++)
+        {
+            std::cerr << std::to_string(mazeArray[i][j].floodValue) << "\t";
+        }
+        std::cerr << std::endl;        
+    }
 
     char mouseLastX = mouse.x;
     char mouseLastY = mouse.y;
 
+    floodFillMouse(mazeArray, mouse);
+
     // Busqueda de camino de vuelta a la casilla de inicio
     while (true) {
-        log("arranca while inicio");
         API::setColor(mouse.x, 15 - mouse.y, 'G');
 
         mazeArray[mouse.y][mouse.x].visited = true;
@@ -139,22 +158,22 @@ int main(int argc, char* argv[]) {
                     switch (forwardMovementsStack.top())
                     {
                     case UP:
-                        API::clearColor(mouse.x, 15 - mouse.y);
+                        API::setColor(mouse.x, 15 - mouse.y,'R');
                         mouse.y--;
                         forwardMovementsStack.pop();
                         break;
                     case RIGHT:
-                        API::clearColor(mouse.x, 15 - mouse.y);
+                        API::setColor(mouse.x, 15 - mouse.y,'R');
                         mouse.x++;
                         forwardMovementsStack.pop();
                         break;
                     case DOWN:
-                        API::clearColor(mouse.x, 15 - mouse.y);
+                        API::setColor(mouse.x, 15 - mouse.y,'R');
                         mouse.y++;
                         forwardMovementsStack.pop();
                         break;
                     case LEFT:
-                        API::clearColor(mouse.x, 15 - mouse.y);
+                        API::setColor(mouse.x, 15 - mouse.y,'R');
                         mouse.x--;
                         forwardMovementsStack.pop();
                         break;
@@ -217,22 +236,22 @@ int main(int argc, char* argv[]) {
             switch (forwardMovementsStack.top())
                 {
                 case UP:
-                    API::clearColor(mouse.x, 15 - mouse.y);
+                    API::setColor(mouse.x, 15 - mouse.y, 'B');
                     mouse.y--;
                     forwardMovementsStack.pop();
                     break;
                 case RIGHT:
-                    API::clearColor(mouse.x, 15 - mouse.y);
+                    API::setColor(mouse.x, 15 - mouse.y, 'B');
                     mouse.x++;
                     forwardMovementsStack.pop();
                     break;
                 case DOWN:
-                    API::clearColor(mouse.x, 15 - mouse.y);
+                    API::setColor(mouse.x, 15 - mouse.y, 'B');
                     mouse.y++;
                     forwardMovementsStack.pop();
                     break;
                 case LEFT:
-                    API::clearColor(mouse.x, 15 - mouse.y);
+                    API::setColor(mouse.x, 15 - mouse.y, 'B');
                     mouse.x--;
                     forwardMovementsStack.pop();
                     break;
@@ -303,6 +322,7 @@ int main(int argc, char* argv[]) {
 
     std::stack<Orientation> reverseMovementStack;
 
+    // Invertimos stack de movimientos 
     while(!forwardMovementsStack.empty())
     {
         reverseMovementStack.push(forwardMovementsStack.top());
@@ -432,29 +452,31 @@ int main(int argc, char* argv[]) {
     }
 
     // Busqueda del camino mas rapido
-
     while (true) {
 
         actualizarParedes(mazeArray, mouse);
-        floodFill(mazeArray);
-        checkNeighborsAndMove(mazeArray, mouse);
+        floodFillCenter(mazeArray,mouse);
+        checkNeighborsAndMove(mazeArray, mouse, movementsStack);
         if(mazeArray[mouse.y][mouse.x].floodValue == 0)
         {
             // Llego al inicio
             break;
         }
+        API::setColor(mouse.x, 15 - mouse.y, 'Y');
 
     }
 
 }
 
-void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
+void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse, std::stack<Orientation>& movementsStack)
 {
-    char floodAux = 10000;
+    char floodAux = 101;
     Orientation moveDirection = RIGHT;
     char maxUnknownWalls = -1;
     int visitedMin = 1000;
     bool hasOptions = false;
+    int wallsNumber;
+
 
     //log("switch de decision de movimiento");
     switch (mouse.runNumber)
@@ -551,7 +573,67 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
                 visitedMin = mazeArray[mouse.y][mouse.x + 1].visitedNum;
             }
         }
-
+        
+        wallsNumber = mazeArray[mouse.y][mouse.x].wallBack + mazeArray[mouse.y][mouse.x].wallFront
+                    + mazeArray[mouse.y][mouse.x].wallRight + mazeArray[mouse.y][mouse.x].wallLeft;
+        /*
+        if(wallsNumber == 3)
+        {
+            while(wallsNumber > 1){  
+                if(!movementsStack.empty())
+                {
+                    switch (movementsStack.top())
+                    {
+                    case UP:
+                        mouse.y--;
+                        movementsStack.pop();
+                        mouse.mouseOrientation = UP;
+                        switch (mouse.mouseOrientation)
+                        {
+                            case UP:
+                                API::moveForward();
+                                break;
+                            case RIGHT:
+                                API::turnLeft();
+                                API::moveForward();
+                                break;
+                            case DOWN:
+                                API::turnRight();
+                                API::turnRight();
+                                API::moveForward();
+                                break;
+                            case LEFT:
+                                API::turnRight();
+                                API::moveForward();
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case RIGHT:
+                        mouse.x++;
+                        movementsStack.pop();
+                        mouse.mouseOrientation = RIGHT;
+                        break;
+                    case DOWN:
+                        mouse.y++;
+                        movementsStack.pop();
+                        mouse.mouseOrientation = DOWN;
+                        break;
+                    case LEFT:
+                        mouse.x--;
+                        movementsStack.pop();
+                        mouse.mouseOrientation = LEFT;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                wallsNumber = mazeArray[mouse.y][mouse.x].wallBack + mazeArray[mouse.y][mouse.x].wallFront
+                            + mazeArray[mouse.y][mouse.x].wallRight + mazeArray[mouse.y][mouse.x].wallLeft;
+            }
+        }
+*/
         mazeArray[mouse.y][mouse.x].visitedNum++;
 
         break;
@@ -637,6 +719,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
             break;
         }
         mouse.y--;
+        movementsStack.push(DOWN);
         break;
 
     case RIGHT:
@@ -662,6 +745,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
             break;
         }
         mouse.x++;
+        movementsStack.push(LEFT);
         break;
 
     case DOWN:
@@ -687,6 +771,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
             break;
         }
         mouse.y++;
+        movementsStack.push(UP);
         break;
         
     case LEFT:
@@ -712,6 +797,7 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
             break;
         }
         mouse.x--;
+        movementsStack.push(RIGHT);
         break;
     default:
         break;
@@ -721,8 +807,11 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse)
     //log("salio del switch de movimiento mouse.x = " + std::to_string(mouse.x) + " mouse.y " + std::to_string(mouse.y));
     }
 
-void floodFill(Square mazeArray[16][16])
+void floodFillCenter(Square mazeArray[16][16], Mouse& mouse)
 {
+    bool mov = true;
+    int n = 0;
+
     for(int i = 0; i <= 15; i++)
     {
         for(int j = 0; j <= 15; j++)
@@ -736,8 +825,7 @@ void floodFill(Square mazeArray[16][16])
             }
         }
     }
-    bool mov = true;
-    int n = 0;
+
     while(mov)
     {
         mov = false;
@@ -747,22 +835,22 @@ void floodFill(Square mazeArray[16][16])
             {
                 if(mazeArray[i][j].floodValue == n)
                 {
-                    if(i-1 >= 0 && !mazeArray[i][j].wallFront && mazeArray[i-1][j].floodValue > n && mazeArray[i-1][j].visitedNum != 0)
+                    if(i-1 >= 0 && !mazeArray[i][j].wallFront && mazeArray[i-1][j].floodValue > n)
                     {
                         mazeArray[i-1][j].floodValue = n+1;
                         mov = true;
                     }
-                    if(j+1 <= 15 && !mazeArray[i][j].wallRight && mazeArray[i][j+1].floodValue > n && mazeArray[i][j+1].visitedNum != 0)
+                    if(j+1 <= 15 && !mazeArray[i][j].wallRight && mazeArray[i][j+1].floodValue > n)
                     {
                         mazeArray[i][j+1].floodValue = n+1;
                         mov = true;
                     }
-                    if(i+1 <= 15 && !mazeArray[i][j].wallBack && mazeArray[i+1][j].floodValue > n && mazeArray[i+1][j].visitedNum != 0)
+                    if(i+1 <= 15 && !mazeArray[i][j].wallBack && mazeArray[i+1][j].floodValue > n)
                     {
                         mazeArray[i+1][j].floodValue = n+1;
                         mov = true;
                     }
-                    if(j-1 >= 0 && !mazeArray[i][j].wallLeft && mazeArray[i][j-1].floodValue > n && mazeArray[i][j-1].visitedNum != 0)
+                    if(j-1 >= 0 && !mazeArray[i][j].wallLeft && mazeArray[i][j-1].floodValue > n)
                     {
                         mazeArray[i][j-1].floodValue = n+1;
                         mov = true;
@@ -770,11 +858,8 @@ void floodFill(Square mazeArray[16][16])
                 }
             }
         }
-
         n++;
-
     }
-
     //log("salio del while del floodfill");
 }
 
@@ -952,4 +1037,62 @@ void actualizarParedes(Square mazeArray[16][16], Mouse& mouse)
     }
 
     log("fin de actualizar paredes");
+}
+
+void floodFillMouse(Square mazeArray[16][16], Mouse& mouse)
+{
+    bool mov = true;
+    int n = 0;
+
+    for(int i = 0; i <= 15; i++)
+    {
+        for(int j = 0; j <= 15; j++)
+        {         
+            if(i == mouse.y && mouse.x == j)
+            {
+                mazeArray[i][j].floodValue = 0;
+            }else
+            {
+                mazeArray[i][j].floodValue = 100;
+            }
+        }
+    }
+
+    while(mov)
+    {
+        mov = false;
+        for(int i = 0; i <= 15; i++)
+        {
+            for (int j = 0; j <= 15; j++)
+            {
+                if(mazeArray[i][j].floodValue == n)
+                {
+                    if(i-1 >= 0 && !mazeArray[i][j].wallFront && mazeArray[i-1][j].floodValue > n && mazeArray[i-1][j].visitedNum != 0)
+                    {
+                        mazeArray[i-1][j].floodValue = n+1;
+                        mov = true;
+                    }
+                    if(j+1 <= 15 && !mazeArray[i][j].wallRight && mazeArray[i][j+1].floodValue > n && mazeArray[i][j+1].visitedNum != 0)
+                    {
+                        mazeArray[i][j+1].floodValue = n+1;
+                        mov = true;
+                    }
+                    if(i+1 <= 15 && !mazeArray[i][j].wallBack && mazeArray[i+1][j].floodValue > n && mazeArray[i+1][j].visitedNum != 0)
+                    {
+                        mazeArray[i+1][j].floodValue = n+1;
+                        mov = true;
+                    }
+                    if(j-1 >= 0 && !mazeArray[i][j].wallLeft && mazeArray[i][j-1].floodValue > n && mazeArray[i][j-1].visitedNum != 0)
+                    {
+                        mazeArray[i][j-1].floodValue = n+1;
+                        mov = true;
+                    }
+                }
+            }
+        }
+
+        n++;
+
+    }
+    
 }
