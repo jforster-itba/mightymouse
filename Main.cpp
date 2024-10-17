@@ -23,6 +23,7 @@ int main(int argc, char* argv[]) {
     Mouse mouse = {UP,{0,15},1};
     std::stack<Orientation> forwardMovementsStack;
     std::stack<Orientation> reverseMovementStack;
+    std::stack<Orientation> reverseMovementStackAux;
     std::stack<Orientation> movementsStack;
 
     bool reverseFlood = true;
@@ -98,26 +99,7 @@ int main(int argc, char* argv[]) {
         }
 
         nMovements++;
-
-        /*// chequeamos si anda el floodfill
-        for(int i = 0; i <= 15; i++)
-        {
-            for(int j = 0; j <= 15; j++)
-            {
-                std::cerr << std::to_string(mazeArray[i][j].floodValue) << "\t";
-            }
-            std::cerr << std::endl;        
-        }*/
     }
-
-    /*for(int i = 0; i <= 15; i++)
-    {
-        for(int j = 0; j <= 15; j++)
-        {
-            std::cerr << std::to_string(mazeArray[i][j].floodValue) << "\t";
-        }
-        std::cerr << std::endl;        
-    }*/
 
     char mouseLastX = mouse.x;
     char mouseLastY = mouse.y;
@@ -174,7 +156,6 @@ int main(int argc, char* argv[]) {
         
         if(reverseFlood)
         {
-            /*log("reverseflood inicio");*/
             if(mouse.x + 1 <= 15 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y][mouse.x + 1].floodValue 
                 && !mazeArray[mouse.y][mouse.x + 1].visited && !mazeArray[mouse.y][mouse.x].wallRight 
                 && mazeArray[mouse.y][mouse.x + 1].visitedNum != 0)
@@ -186,7 +167,6 @@ int main(int argc, char* argv[]) {
                 && !mazeArray[mouse.y][mouse.x - 1].visited && !mazeArray[mouse.y][mouse.x].wallLeft
                 && mazeArray[mouse.y][mouse.x - 1].visitedNum != 0)
             {
-                /*log("RIGHT");*/
                 mouse.x--;
                 forwardMovementsStack.push(RIGHT);
             }
@@ -208,11 +188,9 @@ int main(int argc, char* argv[]) {
             {
                 reverseFlood = false;
             }
-            /*log("reverseflood fin");*/
         }
         else
         {
-            /*log("AAAAAAAAAAAAAAA");*/
             /*
             *   Los movimientos fueron pusheados inversamente a los realizados para que el 
             *   stack contenga los movimientos que tiene que HACER para volver al INICIO.
@@ -273,7 +251,6 @@ int main(int argc, char* argv[]) {
             // Llego al inicio
             break;
         }
-        /*log("fin while inicio");*/
     }
 
     mouse.x = mouseLastX;
@@ -310,6 +287,7 @@ int main(int argc, char* argv[]) {
     while(!forwardMovementsStack.empty())
     {
         reverseMovementStack.push(forwardMovementsStack.top());
+        reverseMovementStackAux.push(forwardMovementsStack.top());
         forwardMovementsStack.pop();
     }
 
@@ -437,121 +415,162 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Invertimos stack de movimientos 
+    while(!reverseMovementStackAux.empty())
+    {
+        reverseMovementStack.push(reverseMovementStackAux.top());
+        reverseMovementStackAux.pop();
+    }
+
+    // Da un giro de 180 grados para volver correctamente
+    switch (mouse.mouseOrientation)
+    {
+    case UP:
+        API::turnLeft();
+        API::turnLeft();
+        mouse.mouseOrientation = DOWN;
+        break;
+    case RIGHT:
+        API::turnLeft();
+        API::turnLeft();
+        mouse.mouseOrientation = LEFT;
+        break;
+    case DOWN:
+        API::turnLeft();
+        API::turnLeft();
+        mouse.mouseOrientation = UP;
+        break;
+    case LEFT:
+        API::turnLeft();
+        API::turnLeft();
+        mouse.mouseOrientation = RIGHT;
+        break;
+    default:
+        break;
+    }
+
     // Busqueda del camino mas rapido
     if(hasArrivedCenter)
     {
-        
-        switch (forwardMovementsStack.top())
+        while(true)
         {
-        case DOWN:
-            switch (mouse.mouseOrientation)
+            switch (reverseMovementStack.top())
             {
-            case UP:
-                API::moveForward();
+                case UP:
+                    switch (mouse.mouseOrientation)
+                    {
+                    case UP:
+                        API::moveForward();
+                        break;
+                    case RIGHT:
+                        API::turnLeft();
+                        API::moveForward();
+                        break;
+                    case DOWN:
+                        API::turnRight();
+                        API::turnRight();
+                        API::moveForward();
+                        break;
+                    case LEFT:
+                        API::turnRight();
+                        API::moveForward();
+                        break;
+                    default:
+                        break;
+                    }
+                    mouse.y--;
+                    mouse.mouseOrientation = UP;
+                    
                 break;
-            case RIGHT:
-                API::turnLeft();
-                API::moveForward();
-                break;
-            case DOWN:
-                API::turnRight();
-                API::turnRight();
-                API::moveForward();
-                break;
-            case LEFT:
-                API::turnRight();
-                API::moveForward();
-                break;
-            default:
-                break;
-            }
-            mouse.y--;
-            mouse.mouseOrientation = UP;
-            
-        break;
 
-        case LEFT:
-            switch (mouse.mouseOrientation)
-            {
-            case UP:
-                API::turnRight();
-                API::moveForward();
-                break;
-            case RIGHT:
-                API::moveForward();
-                break;
-            case DOWN:
-                API::turnLeft();
-                API::moveForward();
-                break;
-            case LEFT:
-                API::turnLeft();
-                API::turnLeft();
-                API::moveForward();
-                break;
-            default:
-                break;
-            }
-            mouse.x++;
-            mouse.mouseOrientation = RIGHT;
-            break;
+                case RIGHT:
+                    switch (mouse.mouseOrientation)
+                    {
+                    case UP:
+                        API::turnRight();
+                        API::moveForward();
+                        break;
+                    case RIGHT:
+                        API::moveForward();
+                        break;
+                    case DOWN:
+                        API::turnLeft();
+                        API::moveForward();
+                        break;
+                    case LEFT:
+                        API::turnLeft();
+                        API::turnLeft();
+                        API::moveForward();
+                        break;
+                    default:
+                        break;
+                    }
+                    mouse.x++;
+                    mouse.mouseOrientation = RIGHT;
+                    break;
 
-        case UP:
-            switch (mouse.mouseOrientation)
+                case DOWN:
+                    switch (mouse.mouseOrientation)
+                    {
+                    case UP:
+                        API::turnLeft();
+                        API::turnLeft();
+                        API::moveForward();
+                        break;
+                    case RIGHT:
+                        API::turnRight();
+                        API::moveForward();
+                        break;
+                    case DOWN:
+                        API::moveForward();
+                        break;
+                    case LEFT:
+                        API::turnLeft();
+                        API::moveForward();
+                        break;
+                    default:
+                        break;
+                    }
+                    mouse.y++;
+                    mouse.mouseOrientation = DOWN;
+                    break;
+                    
+                case LEFT:
+                    switch (mouse.mouseOrientation)
+                    {
+                    case UP:
+                        API::turnLeft();
+                        API::moveForward();
+                        break;
+                    case RIGHT:
+                        API::turnLeft();
+                        API::turnLeft();
+                        API::moveForward();
+                        break;
+                    case DOWN:
+                        API::turnRight();
+                        API::moveForward();
+                        break;
+                    case LEFT:
+                        API::moveForward();
+                        break;
+                    default:
+                        break;
+                    }
+                    mouse.x--;
+                    mouse.mouseOrientation = LEFT;
+                    break;
+                default:
+                    break;
+            }
+            reverseMovementStack.pop();
+
+            if(mazeArray[mouse.y][mouse.x].floodValue == 0)
             {
-            case UP:
-                API::turnLeft();
-                API::turnLeft();
-                API::moveForward();
-                break;
-            case RIGHT:
-                API::turnRight();
-                API::moveForward();
-                break;
-            case DOWN:
-                API::moveForward();
-                break;
-            case LEFT:
-                API::turnLeft();
-                API::moveForward();
-                break;
-            default:
+                // Llego al centro
                 break;
             }
-            mouse.y++;
-            mouse.mouseOrientation = DOWN;
-            break;
-            
-        case RIGHT:
-            switch (mouse.mouseOrientation)
-            {
-            case UP:
-                API::turnLeft();
-                API::moveForward();
-                break;
-            case RIGHT:
-                API::turnLeft();
-                API::turnLeft();
-                API::moveForward();
-                break;
-            case DOWN:
-                API::turnRight();
-                API::moveForward();
-                break;
-            case LEFT:
-                API::moveForward();
-                break;
-            default:
-                break;
-            }
-            mouse.x--;
-            mouse.mouseOrientation = LEFT;
-            break;
-        default:
-            break;
         }
-
-        forwardMovementsStack.pop();
     }
     else
     {
