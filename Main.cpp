@@ -13,6 +13,7 @@ void log(const std::string& text) {
     std::cerr << text << std::endl;
 }
 
+/*------------------------------Estructuras------------------------------*/
 struct Square 
 {
     bool wallFront;
@@ -38,28 +39,32 @@ struct Mouse
     char runNumber;
 };
 
+/*------------------------------Prototipos de funciones------------------------------*/
 void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse, std::stack<Orientation>& movementsStack);
 void floodFillCenter(Square mazeArray[16][16], Mouse& mouse);
 void floodFillMouse(Square mazeArray[16][16], Mouse& mouse);
 void actualizarParedes(Square mazeArray[16][16], Mouse& mouse);
 
+/*------------------------------Main------------------------------*/
 int main(int argc, char* argv[]) {
     log("Running...");
     API::setColor(0, 0, 'G');
     API::setText(0, 0, "abc");
 
+    //Datos
     Square mazeArray[16][16];
     Mouse mouse = {UP,{0,15},1};
     std::stack<Orientation> forwardMovementsStack;
+    std::stack<Orientation> reverseMovementStack;
     std::stack<Orientation> movementsStack;
-
-    auto start = std::chrono::high_resolution_clock::now();
 
     bool reverseFlood = true;
     int nMovements = 0;
-    int nVisited = 0;
     char hasArrivedCenter = 0;
 
+    auto start = std::chrono::high_resolution_clock::now();
+
+    //Seteamos todos los datos del laberinto en su valor default para poder empezar
     for(int i = 0; i <= 15; i++)
     {
         for(int j = 0; j <= 15; j++)
@@ -84,23 +89,27 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    //exploracion
+    //Algoritmo de exploracion
     while (true) {
 
-        nVisited = 0;
+        int nVisited = 0;
         
         auto now = std::chrono::high_resolution_clock::now();
         
         actualizarParedes(mazeArray, mouse);
         floodFillCenter(mazeArray,mouse);
         checkNeighborsAndMove(mazeArray, mouse, movementsStack);
+
+        std::chrono::duration<double> elapsed = now - start;
+
+        // Condicion para dejar de explorar: llego a la casilla objetivo
         if(mazeArray[mouse.y][mouse.x].floodValue == 0)
         {
             hasArrivedCenter = 1;
             break;
         } 
-        else if(nMovements%10 == 0) 
         // Condicion para dejar de explorar: 200 casillas exploradas. Lo revisa cada 10 movimientos.
+        else if(nMovements%10 == 0) 
         {
             for(int i = 0; i <= 15; i++)
             {
@@ -111,13 +120,19 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
-            std::chrono::duration<double> elapsed = now - start;
             if (nVisited >= BREAK_NUMBER || elapsed.count() >= 120){
                 break;
             }
         }
+        // Condicion para dejar de explorar: 2 minutos pasaron desde que empezo la exploracion
+        else if(elapsed.count() >= 120)
+        {
+            break;
+        }
+
         nMovements++;
-        // chequeamos si anda el floodfill
+
+        /*// chequeamos si anda el floodfill
         for(int i = 0; i <= 15; i++)
         {
             for(int j = 0; j <= 15; j++)
@@ -125,17 +140,17 @@ int main(int argc, char* argv[]) {
                 std::cerr << std::to_string(mazeArray[i][j].floodValue) << "\t";
             }
             std::cerr << std::endl;        
-        }
+        }*/
     }
 
-    for(int i = 0; i <= 15; i++)
+    /*for(int i = 0; i <= 15; i++)
     {
         for(int j = 0; j <= 15; j++)
         {
             std::cerr << std::to_string(mazeArray[i][j].floodValue) << "\t";
         }
         std::cerr << std::endl;        
-    }
+    }*/
 
     char mouseLastX = mouse.x;
     char mouseLastY = mouse.y;
@@ -189,10 +204,10 @@ int main(int argc, char* argv[]) {
             // Esta en un casillero donde puede agarrar para otro lado
             reverseFlood = true;
         }
-
+        
         if(reverseFlood)
         {
-            log("reverseflood inicio");
+            /*log("reverseflood inicio");*/
             if(mouse.x + 1 <= 15 && mazeArray[mouse.y][mouse.x].floodValue < mazeArray[mouse.y][mouse.x + 1].floodValue 
                 && !mazeArray[mouse.y][mouse.x + 1].visited && !mazeArray[mouse.y][mouse.x].wallRight 
                 && mazeArray[mouse.y][mouse.x + 1].visitedNum != 0)
@@ -204,7 +219,7 @@ int main(int argc, char* argv[]) {
                 && !mazeArray[mouse.y][mouse.x - 1].visited && !mazeArray[mouse.y][mouse.x].wallLeft
                 && mazeArray[mouse.y][mouse.x - 1].visitedNum != 0)
             {
-                log("RIGHT");
+                /*log("RIGHT");*/
                 mouse.x--;
                 forwardMovementsStack.push(RIGHT);
             }
@@ -226,11 +241,11 @@ int main(int argc, char* argv[]) {
             {
                 reverseFlood = false;
             }
-            log("reverseflood fin");
+            /*log("reverseflood fin");*/
         }
         else
         {
-            log("AAAAAAAAAAAAAAA");
+            /*log("AAAAAAAAAAAAAAA");*/
             /*
             *   Los movimientos fueron pusheados inversamente a los realizados para que el 
             *   stack contenga los movimientos que tiene que HACER para volver al INICIO.
@@ -282,6 +297,8 @@ int main(int argc, char* argv[]) {
 
         if(mazeArray[mouse.y][mouse.x].floodValue >= mazeArray[15][0].floodValue && (mouse.x != 0 || mouse.y != 15))
         {
+            // Llego a una casilla distinta de la de inicio, pero con el mismo valor de floodfill =>
+            // debo retroceder
             reverseFlood = false;
         }
         else if(mazeArray[mouse.y][mouse.x].floodValue == mazeArray[15][0].floodValue && mouse.x == 0 && mouse.y == 15)
@@ -289,13 +306,13 @@ int main(int argc, char* argv[]) {
             // Llego al inicio
             break;
         }
-        log("fin while inicio");
+        /*log("fin while inicio");*/
     }
 
     mouse.x = mouseLastX;
     mouse.y = mouseLastY;
 
-    // Cambia la orientacion del raton para que salga correctamente
+    // Da un giro de 180 grados para volver correctamente
     switch (mouse.mouseOrientation)
     {
     case UP:
@@ -322,8 +339,6 @@ int main(int argc, char* argv[]) {
         break;
     }
 
-    std::stack<Orientation> reverseMovementStack;
-
     // Invertimos stack de movimientos 
     while(!forwardMovementsStack.empty())
     {
@@ -331,7 +346,9 @@ int main(int argc, char* argv[]) {
         forwardMovementsStack.pop();
     }
 
-    // Ejecucion de la vuelta al inicio
+    // Algoritmo para volver al inicio
+    // Como los movimientos se guardan para ir en direccion al centro,
+    // Dependiendo la direccion del movimiento guardado, se hara el movimiento contrario.
     while (true) {
 
         switch (reverseMovementStack.top())
@@ -588,6 +605,14 @@ int main(int argc, char* argv[]) {
 
 }
 
+
+/**
+ * @brief Algoritmo usado para mover al raton
+ *
+ * @param mazeArray Mapa del laberinto
+ * @param mouse 
+ * @param movementsStack guarda los movimientos a realizar luego por el raton
+ */
 void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse, std::stack<Orientation>& movementsStack)
 {
     char floodAux = 101;
@@ -867,6 +892,12 @@ void checkNeighborsAndMove(Square mazeArray[16][16], Mouse& mouse, std::stack<Or
     //log("salio del switch de movimiento mouse.x = " + std::to_string(mouse.x) + " mouse.y " + std::to_string(mouse.y));
     }
 
+/**
+ * @brief Ejecuta el algoritmo floodFill desde el centro y sin importar por donde estuvo el raton
+ *
+ * @param mazeArray Mapa del laberinto
+ * @param mouse 
+ */
 void floodFillCenter(Square mazeArray[16][16], Mouse& mouse)
 {
     bool mov = true;
@@ -923,6 +954,12 @@ void floodFillCenter(Square mazeArray[16][16], Mouse& mouse)
     //log("salio del while del floodfill");
 }
 
+/**
+ * @brief Registra las paredes que el raton va encontrando
+ *
+ * @param mazeArray Mapa del laberinto
+ * @param mouse 
+ */
 void actualizarParedes(Square mazeArray[16][16], Mouse& mouse)
 {
 
@@ -1099,6 +1136,12 @@ void actualizarParedes(Square mazeArray[16][16], Mouse& mouse)
     log("fin de actualizar paredes");
 }
 
+/**
+ * @brief Ejecuta el algoritmo floodFill desde la ultima posicion del raton, le importa por donde estuvo el raton
+ *
+ * @param mazeArray Mapa del laberinto
+ * @param mouse 
+ */
 void floodFillMouse(Square mazeArray[16][16], Mouse& mouse)
 {
     bool mov = true;
